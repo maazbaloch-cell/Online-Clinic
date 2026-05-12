@@ -18,16 +18,19 @@ class IntroScreenDemo extends StatelessWidget {
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 250.w,
+              width: 200.w,
               height: 200.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.w),
+                color: Colors.white,
+                border: Border.all(color: Colors.white, width: 2.w),
               ),
-              child: CircleAvatar(
-                radius: 90.r,
-                backgroundColor: Colors.white,
-                backgroundImage: const AssetImage('assets/doctor.png'),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/doctor.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 100.sp, color: Colors.blue),
+                ),
               ),
             ),
           ),
@@ -51,16 +54,19 @@ class IntroScreenDemo extends StatelessWidget {
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 250.w,
+              width: 200.w,
               height: 200.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.w),
+                color: Colors.white,
+                border: Border.all(color: Colors.white, width: 2.w),
               ),
-              child: CircleAvatar(
-                radius: 90.r,
-                backgroundColor: Colors.white,
-                backgroundImage: const AssetImage('assets/theter.jpg'),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/theter.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.medical_services, size: 100.sp, color: Colors.blue),
+                ),
               ),
             ),
           ),
