@@ -113969,7 +113969,7 @@ $0(){return A.cT(this.a).hw("/signup",null,t.X)},
 $S:0}
 A.yR.prototype={
 H(a){var s,r,q,p,o,n=null,m=$.h().gC(),l=$.h().gK(),k=$.h().gC(),j=A.h7(B.h,2*$.h().gK())
-l=A.bm(n,A.acU(A.yG("assets/doctor.png",B.M,new A.akD(),B.dL,n,n)),B.m,n,n,new A.bk(B.h,n,j,n,n,n,B.bj),n,200*k,n,n,n,n,200*l)
+l=A.bm(n,A.acU(A.yG("assets/Doctor.jpg",B.M,new A.akD(),B.dL,n,n)),B.m,n,n,new A.bk(B.h,n,j,n,n,n,B.bj),n,200*k,n,n,n,n,200*l)
 k=A.ay(n,n,B.h,n,n,n,n,n,n,n,n,$.h().ah(28),n,n,B.B,n,n,!0,n,n,n,n,n,n,n,n)
 l=A.aW0("Discover verified doctors and book appointments instantly. 24/7 availability guaranteed.",A.aW_(A.ay(n,n,B.h,n,n,n,n,n,n,n,n,$.h().ah(16),n,n,B.B,n,n,!0,n,n,n,n,n,n,n,n),B.lR,k),n,new A.aE(new A.Z(0,50*m,0,0),l,n),"Your Health is Our Commitment")
 m=$.h().gC()
