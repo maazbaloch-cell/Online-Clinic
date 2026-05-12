@@ -108,7 +108,7 @@ class _GetstartedState extends State<Getstarted> {
       if (kIsWeb) {
         await supabase.auth.signInWithOAuth(
           OAuthProvider.google,
-          redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
+          redirectTo: 'https://maazbaloch-cell.github.io/Online-Clinic/',
         );
       } else {
         final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? "";
@@ -146,45 +146,49 @@ class _GetstartedState extends State<Getstarted> {
       backgroundColor: Colors.white,
       body: _isLoading 
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Lets Create', style: TextStyle(fontSize: 40.sp, color: Colors.blue, fontWeight: FontWeight.bold)),
-              SizedBox(width: 10.w),
-              Icon(Icons.health_and_safety, size: 50.sp, color: Colors.blue),
-            ],
-          ),
-          SizedBox(height: 80.h),
-          _buildButton('Sign in', Colors.transparent, Colors.blue, () => context.push('/signin')),
-          SizedBox(height: 15.h),
-          _buildButton('Sign up', Colors.blue, Colors.white, () => context.push('/signup')),
-          SizedBox(height: 25.h),
-          const Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-          SizedBox(height: 25.h),
-          GestureDetector(
-            onTap: _continueWithGoogle,
-            child: Container(
-              height: 48.h,
-              width: 300.w,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: Colors.blue),
-              ),
-              child: Row(
+          : Center(
+            child: SingleChildScrollView(
+              child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/google.png', height: 20.h, width: 20.w, fit: BoxFit.contain),
+                  Text('Lets Create', style: TextStyle(fontSize: 40.sp, color: Colors.blue, fontWeight: FontWeight.bold)),
                   SizedBox(width: 10.w),
-                  Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 15.sp)),
+                  Icon(Icons.health_and_safety, size: 50.sp, color: Colors.blue),
                 ],
               ),
+              SizedBox(height: 80.h),
+              _buildButton('Sign in', Colors.transparent, Colors.blue, () => context.push('/signin')),
+              SizedBox(height: 15.h),
+              _buildButton('Sign up', Colors.blue, Colors.white, () => context.push('/signup')),
+              SizedBox(height: 25.h),
+              const Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              SizedBox(height: 25.h),
+              GestureDetector(
+                onTap: _continueWithGoogle,
+                child: Container(
+                  height: 48.h,
+                  width: 300.w,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: Colors.blue),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/google.png', height: 20.h, width: 20.w, fit: BoxFit.contain),
+                      SizedBox(width: 10.w),
+                      Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 15.sp)),
+                    ],
+                  ),
+                ),
+              ),
+                      ],
+                    ),
             ),
           ),
-        ],
-      ),
     );
   }
 

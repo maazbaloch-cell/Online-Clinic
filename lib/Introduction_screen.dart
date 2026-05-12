@@ -27,7 +27,7 @@ class IntroScreenDemo extends StatelessWidget {
               child: CircleAvatar(
                 radius: 90.r,
                 backgroundColor: Colors.white,
-                backgroundImage: AssetImage('doctor.jpg'),
+                backgroundImage: const AssetImage('assets/doctor.png'),
               ),
             ),
           ),
@@ -60,7 +60,7 @@ class IntroScreenDemo extends StatelessWidget {
               child: CircleAvatar(
                 radius: 90.r,
                 backgroundColor: Colors.white,
-                backgroundImage: AssetImage('theter.jpg'),
+                backgroundImage: const AssetImage('assets/theter.jpg'),
               ),
             ),
           ),
@@ -92,18 +92,20 @@ class IntroScreenDemo extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Getstarted()),
+                  MaterialPageRoute(builder: (context) => const Getstarted()),
                 );
               },
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 15.h),
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.blue,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
               child: Text(
                 'Get Started',
-                style: TextStyle(fontSize: 18.sp),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -138,7 +140,7 @@ class IntroScreenDemo extends StatelessWidget {
       onSkip: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Getstarted()),
+          MaterialPageRoute(builder: (context) => const Getstarted()),
         );
       },
       baseBtnStyle: TextButton.styleFrom(

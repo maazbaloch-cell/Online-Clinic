@@ -12,3 +12,4 @@ if %errorlevel% neq 0 (
 echo.
 echo [SUCCESS] Project updated! Wait 1-2 minutes for the live link to refresh.
 pause
+de
