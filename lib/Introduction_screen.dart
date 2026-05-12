@@ -27,7 +27,7 @@ class IntroScreenDemo extends StatelessWidget {
               ),
               child: ClipOval(
                 child: Image.asset(
-                  'assets/doctor.png',
+                  'assets/Doctor.jpg',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 100.sp, color: Colors.blue),
                 ),
