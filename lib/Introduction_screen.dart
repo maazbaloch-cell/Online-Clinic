@@ -18,19 +18,16 @@ class IntroScreenDemo extends StatelessWidget {
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 200.w,
+              width: 250.w,
               height: 200.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: Colors.white, width: 2.w),
+                border: Border.all(color: Colors.white, width: 1.w),
               ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/Doctor.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 100.sp, color: Colors.blue),
-                ),
+              child: CircleAvatar(
+                radius: 90.r,
+                backgroundColor: Colors.white,
+                backgroundImage: const AssetImage('assets/doctor.jpg'),
               ),
             ),
           ),
@@ -54,19 +51,16 @@ class IntroScreenDemo extends StatelessWidget {
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 200.w,
+              width: 250.w,
               height: 200.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: Colors.white, width: 2.w),
+                border: Border.all(color: Colors.white, width: 1.w),
               ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/theter.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.medical_services, size: 100.sp, color: Colors.blue),
-                ),
+              child: CircleAvatar(
+                radius: 90.r,
+                backgroundColor: Colors.white,
+                backgroundImage: const AssetImage('assets/theter.jpg'),
               ),
             ),
           ),
