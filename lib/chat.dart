@@ -1,15 +1,17 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'doctor_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'models/message_model.dart';
+import 'services/chat_service.dart';
 
 class ChatScreen extends StatefulWidget {
+  final String receiverId;
   final String receiverName;
   final String? receiverImage;
 
   const ChatScreen({
     super.key,
+    required this.receiverId,
     required this.receiverName,
     this.receiverImage,
   });
@@ -20,18 +22,26 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [];
+  final ChatService _chatService = ChatService();
+  final String _currentUserId = Supabase.instance.client.auth.currentUser!.id;
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
-      setState(() {
-        _messages.add({
-          'text': _messageController.text.trim(),
-          'isMe': true,
-          'time': '${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-        });
-        _messageController.clear();
-      });
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isNotEmpty) {
+      _messageController.clear();
+      try {
+        final message = MessageModel(
+          senderId: _currentUserId,
+          receiverId: widget.receiverId,
+          content: text,
+          createdAt: DateTime.now(),
+        );
+        await _chatService.sendMessage(message);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error sending message: $e")),
+        );
+      }
     }
   }
 
@@ -41,88 +51,42 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2D6CDF),
-        elevation: 0.5,
-        leadingWidth: 40.w,
+        title: Text(widget.receiverName, style: const TextStyle(color: Colors.white)),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20.sp),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 20.r,
-                  backgroundImage: (widget.receiverImage != null && widget.receiverImage!.isNotEmpty)
-                      ? (widget.receiverImage!.startsWith('http') 
-                          ? NetworkImage(widget.receiverImage!) 
-                          : (kIsWeb 
-                              ? const NetworkImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png') 
-                              : FileImage(File(widget.receiverImage!)) as ImageProvider))
-                      : const NetworkImage('https://cdn-icons-png.flaticon.com/512/3135/3135715.png'),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    height: 10.r,
-                    width: 10.r,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(width: 12.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.receiverName,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty 
-              ? Center(
-                  child: Text(
-                    "No messages yet",
-                    style: TextStyle(color: Colors.grey, fontSize: 14.sp),
-                  ),
-                )
-              : ListView.builder(
+            child: StreamBuilder<List<MessageModel>>(
+              stream: _chatService.getMessagesStream(_currentUserId, widget.receiverId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text("No messages yet"));
+                }
+
+                final messages = snapshot.data!;
+                return ListView.builder(
+                  reverse: false,
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 20.h),
-                  itemCount: _messages.length,
+                  itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final message = _messages[index];
+                    final msg = messages[index];
+                    final isMe = msg.senderId == _currentUserId;
                     return _ChatBubble(
-                      text: message['text'],
-                      isMe: message['isMe'],
-                      time: message['time'],
+                      text: msg.content,
+                      isMe: isMe,
+                      time: "${msg.createdAt.hour}:${msg.createdAt.minute.toString().padLeft(2, '0')}",
                     );
                   },
-                ),
+                );
+              },
+            ),
           ),
           _buildMessageInput(),
         ],
@@ -132,59 +96,24 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: EdgeInsets.only(left: 16.w, right: 16.w, top: 12.h, bottom: MediaQuery.of(context).padding.bottom + 12.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: const BoxDecoration(color: Colors.white),
       child: Row(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF2D6CDF),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.add_rounded, color: Colors.white, size: 24.sp),
-              onPressed: () {},
-            ),
-          ),
-          SizedBox(width: 12.w),
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F7),
-                borderRadius: BorderRadius.circular(25.r),
-              ),
-              child: TextField(
-                controller: _messageController,
-                style: TextStyle(color: const Color(0xFF1F1F2E), fontSize: 14.sp),
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  hintStyle: TextStyle(fontSize: 14.sp, color: Colors.grey),
-                  border: InputBorder.none,
-                ),
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(25.r)),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16.w),
               ),
             ),
           ),
           SizedBox(width: 12.w),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              padding: EdgeInsets.all(12.r),
-              decoration: const BoxDecoration(
-                color: Color(0xFF2D6CDF),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.send_rounded, color: Colors.white, size: 20.sp),
-            ),
+          IconButton(
+            icon: const Icon(Icons.send, color: Color(0xFF2D6CDF)),
+            onPressed: _sendMessage,
           ),
         ],
       ),
@@ -207,44 +136,15 @@ class _ChatBubble extends StatelessWidget {
         crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Container(
-            margin: EdgeInsets.only(bottom: 4.h),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-            constraints: BoxConstraints(maxWidth: 0.75.sw),
+            padding: EdgeInsets.all(12.w),
+            margin: EdgeInsets.symmetric(vertical: 4.h),
             decoration: BoxDecoration(
-              color: isMe ? const Color(0xFF2D6CDF) : Colors.white,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(15.r),
-                topRight: Radius.circular(15.r),
-                bottomLeft: isMe ? Radius.circular(15.r) : Radius.circular(0.r),
-                bottomRight: isMe ? Radius.circular(0.r) : Radius.circular(15.r),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: isMe ? const Color(0xFF2D6CDF) : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12.r),
             ),
-            child: Text(
-              text,
-              style: TextStyle(
-                color: isMe ? Colors.white : const Color(0xFF1F1F2E),
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(text, style: TextStyle(color: isMe ? Colors.white : Colors.black)),
           ),
-          Padding(
-            padding: EdgeInsets.only(bottom: 16.h, left: 4.w, right: 4.w),
-            child: Text(
-              time,
-              style: TextStyle(
-                fontSize: 10.sp,
-                color: Colors.grey,
-              ),
-            ),
-          ),
+          Text(time, style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
         ],
       ),
     );

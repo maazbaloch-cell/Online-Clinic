@@ -114,8 +114,7 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/billing',
       builder: (context, state) {
-        final name =
-        (state.extra is String) ? state.extra as String : "Ali Khan";
+        final name = (state.extra is String) ? state.extra as String : "Ali Khan";
         return BillingScreen(patientName: name);
       },
     ),
@@ -125,8 +124,7 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/call/:channel',
-      builder: (context, state) =>
-          CallPage(channelName: state.pathParameters['channel']!),
+      builder: (context, state) => CallPage(channelName: state.pathParameters['channel']!),
     ),
     GoRoute(
       path: '/patient-detail',
@@ -153,11 +151,11 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/chat',
       builder: (context, state) {
-        final Map<String, dynamic> args =
-        (state.extra != null && state.extra is Map<String, dynamic>)
+        final Map<String, dynamic> args = (state.extra != null && state.extra is Map<String, dynamic>)
             ? state.extra as Map<String, dynamic>
-            : {'name': 'User', 'image': null};
+            : {'id': '', 'name': 'User', 'image': null};
         return ChatScreen(
+          receiverId: args['id'] ?? '',
           receiverName: args['name'] ?? 'User',
           receiverImage: args['image'],
         );
@@ -168,19 +166,13 @@ final GoRouter _router = GoRouter(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // .env load
   await dotenv.load(fileName: ".env");
-
-  // Supabase init .env se
   final supabaseUrl = dotenv.env['SUPABASE_URL']!;
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
-
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
   );
-
   runApp(const MyApp());
 }
 

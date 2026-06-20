@@ -1,37 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'doctor_model.dart';
-
-class NotificationModel {
-  static List<Map<String, dynamic>> list = [
-    {
-      'title': 'Welcome to Doctor App',
-      'body': 'Feel free to book your first appointment today!',
-      'time': DateTime.now().subtract(const Duration(hours: 24)),
-      'isRead': true,
-      'type': 'tip',
-      'data': null,
-    },
-  ];
-
-  static void addNotification({
-    required String title,
-    required String body,
-    required String type,
-    dynamic data,
-  }) {
-    list.insert(0, {
-      'title': title,
-      'body': body,
-      'time': DateTime.now(),
-      'isRead': false,
-      'type': type,
-      'data': data,
-    });
-  }
-}
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'models/notification_model.dart';
+import 'services/notification_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -41,6 +13,9 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  final _notificationService = NotificationService();
+  final _currentUserId = Supabase.instance.client.auth.currentUser!.id;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,26 +33,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ),
         centerTitle: true,
       ),
-      body: NotificationModel.list.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 10.h),
-              itemCount: NotificationModel.list.length,
-              itemBuilder: (context, index) {
-                final notification = NotificationModel.list[index];
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      notification['isRead'] = true;
-                    });
-                    if (notification['type'] == 'payment' && notification['data'] != null) {
-                      context.push('/payment', extra: notification['data']);
-                    }
-                  },
-                  child: _NotificationTile(notification: notification),
-                );
-              },
-            ),
+      body: StreamBuilder<List<NotificationModel>>(
+        stream: _notificationService.getNotificationsStream(_currentUserId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return _buildEmptyState();
+          }
+
+          final notifications = snapshot.data!;
+          return ListView.builder(
+            padding: EdgeInsets.symmetric(vertical: 10.h),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              return GestureDetector(
+                onTap: () {
+                  _notificationService.markAsRead(notification.id);
+                  if (notification.type == 'payment' && notification.data != null) {
+                    context.push('/payment', extra: notification.data);
+                  }
+                },
+                child: _NotificationTile(notification: notification),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -96,7 +80,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 }
 
 class _NotificationTile extends StatelessWidget {
-  final Map<String, dynamic> notification;
+  final NotificationModel notification;
   const _NotificationTile({required this.notification});
 
   @override
@@ -104,25 +88,28 @@ class _NotificationTile extends StatelessWidget {
     IconData icon = Icons.notifications_active_rounded;
     Color color = const Color(0xFF2D6CDF);
 
-    if (notification['type'] == 'payment') {
+    if (notification.type == 'payment') {
       icon = Icons.receipt_long_rounded;
       color = Colors.green;
+    } else if (notification.type == 'appointment') {
+      icon = Icons.calendar_today_rounded;
+      color = Colors.orange;
     }
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: notification['isRead'] ? Colors.white : const Color(0xFFF0F7FF),
+        color: notification.isRead ? Colors.white : const Color(0xFFF0F7FF),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: color.withValues(alpha: 0.1),
+            backgroundColor: color.withOpacity(0.1),
             child: Icon(icon, color: color, size: 20.sp),
           ),
           SizedBox(width: 15.w),
@@ -130,9 +117,9 @@ class _NotificationTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(notification['title'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                Text(notification.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.sp)),
                 SizedBox(height: 4.h),
-                Text(notification['body'], style: TextStyle(fontSize: 12.sp, color: Colors.grey[700])),
+                Text(notification.body, style: TextStyle(fontSize: 12.sp, color: Colors.grey[700])),
               ],
             ),
           ),

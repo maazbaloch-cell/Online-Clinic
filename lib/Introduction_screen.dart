@@ -13,144 +13,79 @@ class IntroScreenDemo extends StatelessWidget {
       pages: [
         PageViewModel(
           title: "Your Health is Our Commitment",
-          body:
-          "Discover verified doctors and book appointments instantly. 24/7 availability guaranteed.",
+          body: "Discover verified doctors and book appointments instantly. 24/7 availability guaranteed.",
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 250.w,
-              height: 200.h,
+              width: 300.r,
+              height: 300.r,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.w),
+                border: Border.all(color: Colors.white, width: 3.w),
+                color: Colors.white,
               ),
-              child: CircleAvatar(
-                radius: 90.r,
-                backgroundColor: Colors.white,
-                backgroundImage: const AssetImage('assets/doctor.jpg'),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/doctor.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 100.sp, color: Colors.blue),
+                ),
               ),
             ),
           ),
-          decoration: PageDecoration(
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 28.sp,
-              fontWeight: FontWeight.bold,
-            ),
-            bodyTextStyle: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16.sp,
-              color: Colors.white,
-            ),
-          ),
+          decoration: _pageDecoration(),
         ),
         PageViewModel(
           title: "Expert Care, Anytime. Anywhere",
-          body:
-          "AI‑powered scheduling with real‑time availability. Sterile rooms. Instant confirmation.",
+          body: "AI‑powered scheduling with real‑time availability. Sterile rooms. Instant confirmation.",
           image: Padding(
             padding: EdgeInsets.only(top: 50.h),
             child: Container(
-              width: 250.w,
-              height: 200.h,
+              width: 300.r,
+              height: 300.r,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.w),
+                border: Border.all(color: Colors.white, width: 3.w),
+                color: Colors.white,
               ),
-              child: CircleAvatar(
-                radius: 90.r,
-                backgroundColor: Colors.white,
-                backgroundImage: const AssetImage('assets/theter.jpg'),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/doctors.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.local_hospital, size: 100.sp, color: Colors.blue),
+                ),
               ),
             ),
           ),
-          decoration: PageDecoration(
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 28.sp,
-              fontWeight: FontWeight.bold,
-            ),
-            bodyTextStyle: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16.sp,
-              color: Colors.white,
-            ),
-          ),
+          decoration: _pageDecoration(),
         ),
         PageViewModel(
           title: "Smarter Healthcare Begins Here",
-          body:
-          "Experience seamless booking, real‑time updates, and secure consultations designed around your comfort.",
-          image: Icon(
-            Icons.medical_information,
-            color: Colors.white,
-            size: 100.sp,
-          ),
-          footer: Padding(
-            padding: EdgeInsets.only(top: 70.h, left: 20.w, right: 20.w),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Getstarted()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 15.h),
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-              child: Text(
-                'Get Started',
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
-          decoration: PageDecoration(
-            titleTextStyle: TextStyle(
-              color: Colors.white,
-              fontSize: 28.sp,
-              fontWeight: FontWeight.bold,
-            ),
-            imagePadding: EdgeInsets.only(top: 60.h),
-            bodyTextStyle: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16.sp,
-              color: Colors.white,
-            ),
-          ),
+          body: "Experience seamless booking, real‑time updates, and secure consultations designed around your comfort.",
+          image: Icon(Icons.medical_information, color: Colors.white, size: 150.sp),
+          decoration: _pageDecoration(),
         ),
       ],
       showSkipButton: true,
-      skip: Text(
-        "Skip",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18.sp,
-        ),
-      ),
-      next: Icon(
-        Icons.chevron_right,
-        color: Colors.white,
-        size: 24.sp,
-      ),
-      onSkip: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const Getstarted()),
-        );
-      },
-      baseBtnStyle: TextButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-      ),
+      skip: Text("Skip", style: TextStyle(color: Colors.white, fontSize: 16.sp)),
+      next: Icon(Icons.chevron_right, color: Colors.white, size: 24.sp),
+      onSkip: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Getstarted())),
+      onDone: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Getstarted())),
       showNextButton: true,
-      showDoneButton: false,
+      showDoneButton: true,
+      done: Text("Done", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp)),
+      dotsDecorator: const DotsDecorator(
+        activeColor: Colors.white,
+        color: Colors.white24,
+      ),
+    );
+  }
+
+  PageDecoration _pageDecoration() {
+    return PageDecoration(
+      titleTextStyle: TextStyle(color: Colors.white, fontSize: 26.sp, fontWeight: FontWeight.bold),
+      bodyTextStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 16.sp, color: Colors.white),
+      imagePadding: EdgeInsets.zero,
     );
   }
 }

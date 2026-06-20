@@ -6,7 +6,7 @@ import 'package:date_field/date_field.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/auth_service.dart';
 
 class DoctorScreen extends StatefulWidget {
   const DoctorScreen({super.key});
@@ -17,7 +17,7 @@ class DoctorScreen extends StatefulWidget {
 
 class _DoctorScreenState extends State<DoctorScreen> {
   final _formKey = GlobalKey<FormState>();
-  final supabase = Supabase.instance.client;
+  final _authService = AuthService();
   bool _isLoading = false;
 
   final TextEditingController _firstNameCtrl = TextEditingController();
@@ -27,8 +27,6 @@ class _DoctorScreenState extends State<DoctorScreen> {
   final TextEditingController _confirmPasswordCtrl = TextEditingController();
   final TextEditingController _medicalSpecialtyCtrl = TextEditingController();
   final TextEditingController _qualificationCtrl = TextEditingController();
-  final TextEditingController _ratingCtrl = TextEditingController();
-  final TextEditingController _reviewsCtrl = TextEditingController();
   final TextEditingController _feeCtrl = TextEditingController();
   final TextEditingController _workingTimeCtrl = TextEditingController();
 
@@ -40,21 +38,9 @@ class _DoctorScreenState extends State<DoctorScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _pickedImage;
 
-  @override
-  void dispose() {
-    _firstNameCtrl.dispose(); _lastNameCtrl.dispose(); _emailCtrl.dispose(); _passwordCtrl.dispose();
-    _confirmPasswordCtrl.dispose(); _medicalSpecialtyCtrl.dispose(); _qualificationCtrl.dispose();
-    _ratingCtrl.dispose(); _reviewsCtrl.dispose(); _feeCtrl.dispose(); _workingTimeCtrl.dispose();
-    super.dispose();
-  }
-
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _pickedImage = image;
-      });
-    }
+    if (image != null) setState(() => _pickedImage = image);
   }
 
   Future<void> _submit() async {
@@ -64,51 +50,41 @@ class _DoctorScreenState extends State<DoctorScreen> {
        return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final AuthResponse res = await supabase.auth.signUp(
+      await _authService.signUp(
         email: _emailCtrl.text.trim(),
         password: _passwordCtrl.text.trim(),
-        data: {
+        role: 'doctor',
+        userData: {
           'first_name': _firstNameCtrl.text.trim(),
           'last_name': _lastNameCtrl.text.trim(),
-          'role': 'doctor',
           'specialty': _medicalSpecialtyCtrl.text.trim(),
           'qualification': _qualificationCtrl.text.trim(),
           'fee': _feeCtrl.text.trim(),
-          'license_years': _selectedLicenseYears?.name,
+          'license_years': _selectedLicenseYears?.name ?? '',
+          'working_time': _workingTimeCtrl.text.trim(),
+          'rating': 0.0,
+          'reviews': 0,
         },
+        imageFile: _pickedImage != null ? File(_pickedImage!.path) : null,
       );
 
-      if (res.user != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Doctor Profile Created! Please confirm your email.')),
-          );
-          context.pushReplacement('/signin');
-        }
-      }
-    } on AuthException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Doctor Profile Created! Please confirm your email.'), backgroundColor: Colors.green),
         );
+        context.pushReplacement('/signin');
       }
-    } catch (error) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unexpected error occurred'), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -128,8 +104,6 @@ class _DoctorScreenState extends State<DoctorScreen> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            reverse: true,
-            padding: EdgeInsets.only(bottom: 40.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -139,8 +113,7 @@ class _DoctorScreenState extends State<DoctorScreen> {
                   child: Column(
                     children: [
                       Container(
-                        width: 80.r,
-                        height: 80.r,
+                        width: 80.r, height: 80.r,
                         decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
                         child: ClipOval(
                           child: _pickedImage != null
@@ -150,7 +123,6 @@ class _DoctorScreenState extends State<DoctorScreen> {
                               : const Icon(Icons.person, size: 40, color: Colors.grey),
                         ),
                       ),
-                      SizedBox(height: 8.h),
                       TextButton.icon(onPressed: _pickImage, icon: const Icon(Icons.camera_alt_outlined), label: const Text('Upload Photo')),
                     ],
                   ),
@@ -158,65 +130,50 @@ class _DoctorScreenState extends State<DoctorScreen> {
                 SizedBox(height: 20.h),
                 Row(
                   children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('First Name'), SizedBox(height: 5.h), TextFormField(controller: _firstNameCtrl, decoration: _inputDecoration('Faizan'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)])),
+                    Expanded(child: _buildField('First Name', _firstNameCtrl, 'Enter First Name')),
                     SizedBox(width: 12.w),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Last Name'), SizedBox(height: 5.h), TextFormField(controller: _lastNameCtrl, decoration: _inputDecoration('Ansari'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)])),
+                    Expanded(child: _buildField('Last Name', _lastNameCtrl, 'Enter Last Name')),
                   ],
                 ),
                 SizedBox(height: 12.h),
-                _labelWithStar('Email'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _emailCtrl, decoration: _inputDecoration('example@mail.com'), validator: (val) { if (val == null || val.isEmpty) return 'Required'; if (!val.contains('@')) return 'Invalid Email'; return null; }),
+                _buildField('Email', _emailCtrl, 'example@mail.com'),
                 SizedBox(height: 12.h),
                 Row(
                   children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Password'), SizedBox(height: 5.h), TextFormField(controller: _passwordCtrl, obscureText: _obscurePassword, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _obscurePassword = !_obscurePassword))), validator: (val) => (val == null || val.length < 6) ? 'Min 6 chars' : null)])),
+                    Expanded(child: _buildPasswordField('Password', _passwordCtrl, _obscurePassword, () => setState(() => _obscurePassword = !_obscurePassword))),
                     SizedBox(width: 12.w),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Confirm Password'), SizedBox(height: 5.h), TextFormField(controller: _confirmPasswordCtrl, obscureText: _obscureConfirmPassword, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword))), validator: (val) => (val != _passwordCtrl.text) ? 'Not Match' : null)])),
+                    Expanded(child: _buildPasswordField('Confirm Password', _confirmPasswordCtrl, _obscureConfirmPassword, () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword))),
                   ],
                 ),
                 SizedBox(height: 12.h),
-                _labelWithStar('Years of Medical License'),
-                SizedBox(height: 5.h),
-                DropDownTextField(clearOption: false, textFieldDecoration: _inputDecoration('Select Year'), dropDownList: const [DropDownValueModel(name: '1 year', value: 1), DropDownValueModel(name: '2 years', value: 2), DropDownValueModel(name: '5+ years', value: 5)], onChanged: (val) => _selectedLicenseYears = val),
+                _labelWithStar('Years of License'),
+                DropDownTextField(textFieldDecoration: _inputDecoration('Select Year'), dropDownList: const [DropDownValueModel(name: '1 year', value: 1), DropDownValueModel(name: '5+ years', value: 5)], onChanged: (val) => _selectedLicenseYears = val),
                 SizedBox(height: 12.h),
-                _labelWithStar('Date of Birth'),
-                SizedBox(height: 5.h),
-                DateTimeFormField(decoration: _inputDecoration('Enter Date'), mode: DateTimeFieldPickerMode.date, onChanged: (DateTime? value) => _selectedDob = value, validator: (val) => (_selectedDob == null) ? 'Required' : null),
+                _buildField('Medical Specialty', _medicalSpecialtyCtrl, 'e.g. Cardiologist'),
                 SizedBox(height: 12.h),
-                _labelWithStar('Medical Specialty'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _medicalSpecialtyCtrl, decoration: _inputDecoration('Enter Specialty'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null),
+                _buildField('Qualification', _qualificationCtrl, 'MBBS, FCPS'),
                 SizedBox(height: 12.h),
-                _labelWithStar('Qualification'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _qualificationCtrl, decoration: _inputDecoration('MBBS, FCPS, etc.'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null),
-                SizedBox(height: 12.h),
-                _labelWithStar('Working Days & Time'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _workingTimeCtrl, decoration: _inputDecoration('Monday–Saturday, 9:00 AM – 5:00 PM'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null),
-                SizedBox(height: 12.h),
-                Row(
-                  children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Rating'), SizedBox(height: 5.h), TextFormField(controller: _ratingCtrl, keyboardType: TextInputType.number, decoration: _inputDecoration('4.8'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)])),
-                    SizedBox(width: 12.w),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Reviews'), SizedBox(height: 5.h), TextFormField(controller: _reviewsCtrl, keyboardType: TextInputType.number, decoration: _inputDecoration('100'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)])),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                _labelWithStar('Consultation Fee (USD)'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _feeCtrl, keyboardType: TextInputType.number, decoration: _inputDecoration('20'), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null),
+                _buildField('Consultation Fee (Rs)', _feeCtrl, '2000', keyboardType: TextInputType.number),
                 SizedBox(height: 25.h),
-                GestureDetector(onTap: _submit, child: Container(height: 44.h, width: double.infinity, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20.r), color: Colors.blue), child: const Center(child: Text('Setup Your Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
-                SizedBox(height: 15.h),
-                Center(child: GestureDetector(onTap: () => context.push('/signin'), child: Text.rich(TextSpan(text: "Already have an Account? ", style: const TextStyle(color: Colors.black), children: [TextSpan(text: 'Sign in', style: const TextStyle(color: Colors.blue))])))),
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: Size(double.infinity, 48.h), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
+                  child: const Text('Create Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildField(String label, TextEditingController ctrl, String hint, {TextInputType? keyboardType}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar(label), SizedBox(height: 5.h), TextFormField(controller: ctrl, keyboardType: keyboardType, decoration: _inputDecoration(hint), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)]);
+  }
+
+  Widget _buildPasswordField(String label, TextEditingController ctrl, bool obscure, VoidCallback toggle) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar(label), SizedBox(height: 5.h), TextFormField(controller: ctrl, obscureText: obscure, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(obscure ? Icons.visibility_off : Icons.visibility), onPressed: toggle)), validator: (val) => (val == null || val.length < 6) ? 'Min 6 chars' : null)]);
   }
 
   Widget _labelWithStar(String text) {

@@ -1,4 +1,5 @@
 class Doctor {
+  final String? id;
   final String firstName;
   final String lastName;
   final String specialty;
@@ -11,6 +12,7 @@ class Doctor {
   final String? networkImageUrl;
 
   Doctor({
+    this.id,
     required this.firstName,
     required this.lastName,
     required this.specialty,
@@ -24,6 +26,22 @@ class Doctor {
   });
 
   String get fullName => '$firstName $lastName';
+
+  factory Doctor.fromJson(Map<String, dynamic> json) {
+    final profile = json['profiles'] as Map<String, dynamic>?;
+    return Doctor(
+      id: json['id'],
+      firstName: profile?['first_name'] ?? json['first_name'] ?? 'Doctor',
+      lastName: profile?['last_name'] ?? json['last_name'] ?? '',
+      specialty: json['specialty'] ?? 'General Physician',
+      qualification: json['qualification'] ?? 'MBBS',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviews: json['reviews'] ?? 0,
+      fee: json['fee'] ?? 0,
+      workingTime: json['working_time'] ?? '09:00 AM - 05:00 PM',
+      networkImageUrl: json['image_url'],
+    );
+  }
 }
 
 class Challan {
@@ -44,7 +62,8 @@ class Challan {
 
 class CurrentDoctor {
   static Doctor? current = Doctor(
-    firstName: "Dr. Ahmed",
+    id: "doctor1",
+    firstName: "Ahmed",
     lastName: "Khan",
     specialty: "Cardiologist",
     qualification: "MBBS, FCPS",
@@ -58,7 +77,8 @@ class CurrentDoctor {
   static List<Doctor> getDummyDoctors() {
     return [
       Doctor(
-        firstName: "Dr. Sarah",
+        id: "doctor2",
+        firstName: "Sarah",
         lastName: "Johnson",
         specialty: "Dentist",
         qualification: "BDS, MDS",
@@ -67,28 +87,6 @@ class CurrentDoctor {
         fee: 40,
         workingTime: "10:00 AM - 06:00 PM",
         networkImageUrl: "https://img.freepik.com/free-photo/pleased-young-female-doctor-white-coat-with-stethoscope-around-neck-standing-with-folded-arms-isolated-white-wall_231208-2200.jpg",
-      ),
-      Doctor(
-        firstName: "Dr. Michael",
-        lastName: "Smith",
-        specialty: "Cardiologist",
-        qualification: "MD, FACC",
-        rating: 4.7,
-        reviews: 150,
-        fee: 70,
-        workingTime: "08:00 AM - 04:00 PM",
-        networkImageUrl: "https://img.freepik.com/free-photo/doctor-with-stethoscope-hands-folded_1154-491.jpg",
-      ),
-      Doctor(
-        firstName: "Dr. Emily",
-        lastName: "Davis",
-        specialty: "Allergist",
-        qualification: "MD, PhD",
-        rating: 4.6,
-        reviews: 60,
-        fee: 35,
-        workingTime: "09:00 AM - 05:00 PM",
-        networkImageUrl: "https://img.freepik.com/free-photo/smiling-female-doctor-white-coat-standing-with-arms-crossed-white-background_231208-2144.jpg",
       ),
     ];
   }

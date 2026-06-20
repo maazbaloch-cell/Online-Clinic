@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'services/auth_service.dart';
 
 class Patient extends StatefulWidget {
   const Patient({super.key});
@@ -15,7 +15,7 @@ class Patient extends StatefulWidget {
 
 class _PatientState extends State<Patient> {
   final _formKey = GlobalKey<FormState>();
-  final supabase = Supabase.instance.client;
+  final _authService = AuthService();
   bool _isLoading = false;
   XFile? _pickedImage;
   final ImagePicker _picker = ImagePicker();
@@ -33,115 +33,58 @@ class _PatientState extends State<Patient> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _selectedGender;
-  bool _showErrors = false;
-
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _ageController.dispose();
-    _cnicController.dispose();
-    _cityController.dispose();
-    _addressController.dispose();
-    super.dispose();
-  }
 
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() {
-        _pickedImage = image;
-      });
-    }
+    if (image != null) setState(() => _pickedImage = image);
   }
 
   Future<void> _submit() async {
-    setState(() {
-      _showErrors = true;
-    });
-
     if (_formKey.currentState?.validate() != true) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // 1. Supabase Auth Signup
-      final AuthResponse res = await supabase.auth.signUp(
+      await _authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        data: {
+        role: 'patient',
+        userData: {
           'first_name': _firstNameController.text.trim(),
           'last_name': _lastNameController.text.trim(),
-          'role': 'patient',
-          'age': _ageController.text,
-          'city': _cityController.text,
-          'gender': _selectedGender,
+          'age': _ageController.text.trim(),
+          'city': _cityController.text.trim(),
+          'gender': _selectedGender ?? 'Not Specified',
+          'cnic': _cnicController.text.trim(),
+          'address': _addressController.text.trim(),
         },
       );
 
-      if (res.user != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registration successful! Please check your email for confirmation.')),
-          );
-          context.pushReplacement('/signin');
-        }
-      }
-    } on AuthException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Registration successful! Please check your email.'), backgroundColor: Colors.green),
         );
+        context.pushReplacement('/signin');
       }
-    } catch (error) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unexpected error occurred'), backgroundColor: Colors.red),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   InputDecoration _inputDecoration(String hint, {Widget? suffixIcon}) {
-    return InputDecoration(
-      hintText: hint,
-      isDense: true,
-      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      suffixIcon: suffixIcon,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.r)),
-      errorMaxLines: 1,
-    );
-  }
-
-  String? _validateRequired(String? value) {
-    if (!_showErrors) return null;
-    if (value == null || value.isEmpty) {
-      return 'Required';
-    }
-    return null;
+    return InputDecoration(hintText: hint, isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h), suffixIcon: suffixIcon, border: OutlineInputBorder(borderRadius: BorderRadius.circular(20.r)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: Colors.white, leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.of(context).pop())),
       backgroundColor: Colors.white,
       body: _isLoading 
           ? const Center(child: CircularProgressIndicator())
@@ -150,8 +93,6 @@ class _PatientState extends State<Patient> {
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
-            reverse: true,
-            padding: EdgeInsets.only(bottom: 40.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -161,8 +102,7 @@ class _PatientState extends State<Patient> {
                   child: Column(
                     children: [
                       Container(
-                        width: 80.r,
-                        height: 80.r,
+                        width: 80.r, height: 80.r,
                         decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
                         child: ClipOval(
                           child: _pickedImage != null
@@ -172,7 +112,6 @@ class _PatientState extends State<Patient> {
                               : const Icon(Icons.person, size: 40, color: Colors.grey),
                         ),
                       ),
-                      SizedBox(height: 8.h),
                       TextButton.icon(onPressed: _pickImage, icon: const Icon(Icons.camera_alt_outlined), label: const Text('Upload Photo')),
                     ],
                   ),
@@ -180,70 +119,57 @@ class _PatientState extends State<Patient> {
                 SizedBox(height: 20.h),
                 Row(
                   children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('First Name'), SizedBox(height: 5.h), TextFormField(controller: _firstNameController, decoration: _inputDecoration('John'), validator: _validateRequired)])),
+                    Expanded(child: _buildField('First Name', _firstNameController, 'John')),
                     SizedBox(width: 12.w),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Last Name'), SizedBox(height: 5.h), TextFormField(controller: _lastNameController, decoration: _inputDecoration('Doe'), validator: _validateRequired)])),
+                    Expanded(child: _buildField('Last Name', _lastNameController, 'Doe')),
                   ],
                 ),
                 SizedBox(height: 12.h),
-                _labelWithStar('Email'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _emailController, keyboardType: TextInputType.emailAddress, decoration: _inputDecoration('example@mail.com'), validator: (val) {
-                  if (!_showErrors) return null;
-                  if (val == null || val.isEmpty) return 'Required';
-                  if (!val.contains('@')) return 'Invalid email';
-                  return null;
-                }),
+                _buildField('Email', _emailController, 'example@mail.com', keyboardType: TextInputType.emailAddress),
                 SizedBox(height: 12.h),
                 Row(
                   children: [
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Password'), SizedBox(height: 5.h), TextFormField(controller: _passwordController, obscureText: _obscurePassword, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _obscurePassword = !_obscurePassword))), validator: (val) {
-                      if (!_showErrors) return null;
-                      if (val == null || val.length < 6) return 'Min 6 characters';
-                      return null;
-                    })])),
+                    Expanded(child: _buildPasswordField('Password', _passwordController, _obscurePassword, () => setState(() => _obscurePassword = !_obscurePassword))),
                     SizedBox(width: 12.w),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar('Confirm Password'), SizedBox(height: 5.h), TextFormField(controller: _confirmPasswordController, obscureText: _obscureConfirmPassword, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword))), validator: (val) {
-                      if (!_showErrors) return null;
-                      if (val == null || val.isEmpty) return 'Required';
-                      if (val != _passwordController.text) return 'Not Match';
-                      return null;
-                    })])),
+                    Expanded(child: _buildPasswordField('Confirm Password', _confirmPasswordController, _obscureConfirmPassword, () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword))),
                   ],
                 ),
                 SizedBox(height: 12.h),
-                _labelWithStar('Age'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _ageController, keyboardType: TextInputType.number, decoration: _inputDecoration('Enter Age'), validator: _validateRequired),
-                SizedBox(height: 12.h),
-                _labelWithStar('CNIC'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _cnicController, keyboardType: TextInputType.number, decoration: _inputDecoration('12345-1234567-1'), validator: _validateRequired),
+                Row(
+                  children: [
+                    Expanded(child: _buildField('Age', _ageController, '25', keyboardType: TextInputType.number)),
+                    SizedBox(width: 12.w),
+                    Expanded(child: _buildField('City', _cityController, 'Karachi')),
+                  ],
+                ),
                 SizedBox(height: 12.h),
                 _labelWithStar('Gender'),
-                SizedBox(height: 5.h),
-                DropdownButtonFormField<String>(decoration: _inputDecoration('Select Gender'), items: ['Male', 'Female', 'Other'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(), onChanged: (val) => setState(() => _selectedGender = val), validator: (val) {
-                  if (!_showErrors) return null;
-                  return val == null ? 'Required' : null;
-                }),
-                SizedBox(height: 12.h),
-                _labelWithStar('City'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _cityController, decoration: _inputDecoration('Enter City'), validator: _validateRequired),
-                SizedBox(height: 12.h),
-                _labelWithStar('Address'),
-                SizedBox(height: 5.h),
-                TextFormField(controller: _addressController, maxLines: 2, decoration: _inputDecoration('Enter Full Address'), validator: _validateRequired),
+                DropdownButtonFormField<String>(
+                  decoration: _inputDecoration('Select Gender'),
+                  items: ['Male', 'Female', 'Other'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                  onChanged: (val) => setState(() => _selectedGender = val),
+                  validator: (val) => val == null ? 'Required' : null,
+                ),
                 SizedBox(height: 25.h),
-                GestureDetector(onTap: _submit, child: Container(height: 44.h, width: double.infinity, decoration: BoxDecoration(borderRadius: BorderRadius.circular(20.r), color: Colors.blue), child: const Center(child: Text('Setup Your Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))))),
-                SizedBox(height: 15.h),
-                Center(child: GestureDetector(onTap: () => context.push('/signin'), child: Text.rich(TextSpan(text: "Already have an Account? ", style: const TextStyle(color: Colors.black), children: [TextSpan(text: 'Sign in', style: const TextStyle(color: Colors.blue))])))),
+                ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, minimumSize: Size(double.infinity, 48.h), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r))),
+                  child: const Text('Create Account', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildField(String label, TextEditingController ctrl, String hint, {TextInputType? keyboardType}) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar(label), SizedBox(height: 5.h), TextFormField(controller: ctrl, keyboardType: keyboardType, decoration: _inputDecoration(hint), validator: (val) => (val == null || val.isEmpty) ? 'Required' : null)]);
+  }
+
+  Widget _buildPasswordField(String label, TextEditingController ctrl, bool obscure, VoidCallback toggle) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_labelWithStar(label), SizedBox(height: 5.h), TextFormField(controller: ctrl, obscureText: obscure, decoration: _inputDecoration('********', suffixIcon: IconButton(icon: Icon(obscure ? Icons.visibility_off : Icons.visibility), onPressed: toggle)), validator: (val) => (val == null || val.length < 6) ? 'Min 6 chars' : null)]);
   }
 
   Widget _labelWithStar(String text) {

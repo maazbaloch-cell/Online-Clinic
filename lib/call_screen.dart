@@ -3,9 +3,8 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-
-const appId = "dfa6ae43ad674eaeb010c099f6cd1bc8";
-const token = "007eJxTYJCc1LdM7l70sV12PbFbn7krvjp/qIL7d+7bLY+f6zaesdFXYEhJSzRLTDUxTkwxMzdJTUxNMjA0SDawtEwzS04xTEq2WLbnYWZDICPDvdeZjIwMEAjiczMk52TmZSbHF+Xn5zIwAABJpSaf";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/call_service.dart';
 
 class CallPage extends StatefulWidget {
   final String channelName;
@@ -20,6 +19,11 @@ class _CallPageState extends State<CallPage> {
   bool _localUserJoined = false;
   bool _muted = false;
   late RtcEngine _engine;
+  final _callService = CallService();
+
+  // Agora Credentials from .env
+  final String appId = dotenv.env['AGORA_APP_ID'] ?? "dfa6ae43ad674eaeb010c099f6cd1bc8";
+  final String? token = dotenv.env['AGORA_TEMP_TOKEN']; // Use null if using Edge Functions
 
   @override
   void initState() {
@@ -31,7 +35,7 @@ class _CallPageState extends State<CallPage> {
     await [Permission.microphone, Permission.camera].request();
 
     _engine = createAgoraRtcEngine();
-    await _engine.initialize(const RtcEngineContext(
+    await _engine.initialize(RtcEngineContext(
       appId: appId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
@@ -39,19 +43,13 @@ class _CallPageState extends State<CallPage> {
     _engine.registerEventHandler(
       RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-          setState(() {
-            _localUserJoined = true;
-          });
+          setState(() => _localUserJoined = true);
         },
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-          setState(() {
-            _remoteUid = remoteUid;
-          });
+          setState(() => _remoteUid = remoteUid);
         },
         onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-          setState(() {
-            _remoteUid = null;
-          });
+          setState(() => _remoteUid = null);
         },
       ),
     );
@@ -60,7 +58,7 @@ class _CallPageState extends State<CallPage> {
     await _engine.startPreview();
 
     await _engine.joinChannel(
-      token: token,
+      token: token ?? "", // Real app mein yahan CallService se token aata hai
       channelId: widget.channelName,
       uid: 0,
       options: const ChannelMediaOptions(
@@ -73,11 +71,12 @@ class _CallPageState extends State<CallPage> {
 
   @override
   void dispose() {
-    _dispose();
+    _endCall();
     super.dispose();
   }
 
-  Future<void> _dispose() async {
+  Future<void> _endCall() async {
+    await _callService.endCall(widget.channelName);
     await _engine.leaveChannel();
     await _engine.release();
   }
@@ -98,7 +97,6 @@ class _CallPageState extends State<CallPage> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20.r),
                 border: Border.all(color: Colors.white24, width: 2),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18.r),
@@ -129,17 +127,7 @@ class _CallPageState extends State<CallPage> {
         ),
       );
     } else {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(color: Color(0xFF2D6CDF)),
-          SizedBox(height: 20.h),
-          Text(
-            'Waiting for user to join...',
-            style: TextStyle(color: Colors.white70, fontSize: 15.sp, fontWeight: FontWeight.w500),
-          ),
-        ],
-      );
+      return const Center(child: Text('Waiting for user...', style: TextStyle(color: Colors.white)));
     }
   }
 

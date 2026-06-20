@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'doctor_model.dart';
+import 'models/appointment_model.dart';
+import 'services/appointment_service.dart';
 
 class DoctorAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
@@ -14,6 +17,8 @@ class DoctorAppointmentScreen extends StatefulWidget {
 class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
   DateTime _selectedDate = DateTime.now();
   String _selectedTime = '09:00AM - 10:00AM';
+  final AppointmentService _appointmentService = AppointmentService();
+  bool _isLoading = false;
 
   final List<String> timeSlots = [
     '09:00AM - 10:00AM',
@@ -27,6 +32,50 @@ class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
     '05:00PM - 06:00PM',
     '06:00PM - 07:00PM',
   ];
+
+  Future<void> _bookAppointment() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login first to book an appointment')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final appointment = AppointmentModel(
+        doctorId: widget.doctor.id ?? 'unknown_doctor',
+        patientId: user.id,
+        doctorName: widget.doctor.fullName,
+        patientName: user.userMetadata?['first_name'] ?? 'Patient',
+        date: _selectedDate,
+        timeSlot: _selectedTime,
+      );
+
+      await _appointmentService.createAppointment(appointment);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Appointment Booked Successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +375,7 @@ class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
                     width: double.infinity,
                     height: 54.h,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: _isLoading ? null : _bookAppointment,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2196F3),
                         foregroundColor: Colors.white,
@@ -335,13 +384,19 @@ class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: Text(
-                        'Make an appointment',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _isLoading 
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            'Make an appointment',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                     ),
                   ),
                   SizedBox(height: 8.h),
@@ -355,7 +410,7 @@ class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
   }
 
   List<Widget> _buildWeekDaysRow() {
-    final start = _selectedDate;
+    final start = DateTime.now();
     final days = List.generate(5, (i) {
       final date = DateTime(start.year, start.month, start.day + i);
       return date;
@@ -380,8 +435,8 @@ class _DoctorAppointmentScreenState extends State<DoctorAppointmentScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null) {
       setState(() {
