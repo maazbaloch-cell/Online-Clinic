@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:untitled29/services/auth_service.dart';
-import 'package:untitled29/doctor_model.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({super.key});
@@ -50,6 +49,7 @@ class _SigninScreenState extends State<SigninScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Fetching role using our AuthService instance
       String? role = await _authService.getUserRole(user.id);
       role ??= user.userMetadata?['role'];
 
@@ -71,12 +71,9 @@ class _SigninScreenState extends State<SigninScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         if (role == 'doctor') {
-          CurrentDoctor.current = CurrentDoctor.getDummyDoctors()[0];
           context.go('/doctor-dashboard');
         } else if (role == 'patient') {
           context.go('/dashboard');
-        } else if (role != null) {
-          // Success
         } else {
           context.go('/signup');
         }
@@ -140,7 +137,6 @@ class _SigninScreenState extends State<SigninScreen> {
         );
       }
     } catch (e) {
-      debugPrint("Google Login Error: $e");
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

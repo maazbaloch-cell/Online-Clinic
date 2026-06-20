@@ -43,8 +43,10 @@ class _GetstartedState extends State<Getstarted> {
     setState(() => _isLoading = true);
 
     try {
+      // Corrected to use the instance method from AuthService
       String? role = await _authService.getUserRole(user.id);
       role ??= user.userMetadata?['role'];
+
       if (role == null) {
         if (mounted) {
           role = await _showRoleSelectionDialog();
@@ -59,14 +61,13 @@ class _GetstartedState extends State<Getstarted> {
           }
         }
       }
+
       if (mounted) {
         setState(() => _isLoading = false);
         if (role == 'doctor') {
-          CurrentDoctor.current = CurrentDoctor.getDummyDoctors()[0]; 
           context.go('/doctor-dashboard');
         } else if (role == 'patient') {
           context.go('/dashboard');
-        } else if (role != null) {
         } else {
           context.go('/signup');
         }
@@ -108,7 +109,7 @@ class _GetstartedState extends State<Getstarted> {
       if (kIsWeb) {
         await supabase.auth.signInWithOAuth(
           OAuthProvider.google,
-          redirectTo: 'https://maazbaloch-cell.github.io/Online-Clinic/',
+          redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
         );
       } else {
         final webClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'] ?? "";
@@ -130,7 +131,6 @@ class _GetstartedState extends State<Getstarted> {
         );
       }
     } catch (e) {
-      debugPrint("Google Login Error: $e");
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -149,44 +149,44 @@ class _GetstartedState extends State<Getstarted> {
           : Center(
             child: SingleChildScrollView(
               child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Lets Create', style: TextStyle(fontSize: 40.sp, color: Colors.blue, fontWeight: FontWeight.bold)),
-                  SizedBox(width: 10.w),
-                  Icon(Icons.health_and_safety, size: 50.sp, color: Colors.blue),
-                ],
-              ),
-              SizedBox(height: 80.h),
-              _buildButton('Sign in', Colors.transparent, Colors.blue, () => context.push('/signin')),
-              SizedBox(height: 15.h),
-              _buildButton('Sign up', Colors.blue, Colors.white, () => context.push('/signup')),
-              SizedBox(height: 25.h),
-              const Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-              SizedBox(height: 25.h),
-              GestureDetector(
-                onTap: _continueWithGoogle,
-                child: Container(
-                  height: 48.h,
-                  width: 300.w,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10.r),
-                    border: Border.all(color: Colors.blue),
-                  ),
-                  child: Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset('assets/google.png', height: 20.h, width: 20.w, fit: BoxFit.contain),
+                      Text('Lets Create', style: TextStyle(fontSize: 36.sp, color: Colors.blue, fontWeight: FontWeight.bold)),
                       SizedBox(width: 10.w),
-                      Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 15.sp)),
+                      Icon(Icons.health_and_safety, size: 45.sp, color: Colors.blue),
                     ],
                   ),
-                ),
-              ),
-                      ],
+                  SizedBox(height: 60.h),
+                  _buildButton('Sign in', Colors.transparent, Colors.blue, () => context.push('/signin')),
+                  SizedBox(height: 15.h),
+                  _buildButton('Sign up', Colors.blue, Colors.white, () => context.push('/signup')),
+                  SizedBox(height: 25.h),
+                  const Text('OR', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 25.h),
+                  GestureDetector(
+                    onTap: _continueWithGoogle,
+                    child: Container(
+                      height: 48.h,
+                      width: 280.w,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10.r),
+                        border: Border.all(color: Colors.blue),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/google.png', height: 20.h, width: 20.w, fit: BoxFit.contain),
+                          SizedBox(width: 10.w),
+                          Text('Continue with Google', style: TextStyle(color: Colors.black, fontSize: 14.sp)),
+                        ],
+                      ),
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
     );
@@ -197,7 +197,7 @@ class _GetstartedState extends State<Getstarted> {
       onTap: onTap,
       child: Container(
         height: 48.h,
-        width: 300.w,
+        width: 280.w,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10.r),
           color: bgColor,

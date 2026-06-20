@@ -21,11 +21,8 @@ import 'package:untitled29/video_call.dart';
 import 'package:untitled29/call_screen.dart';
 import 'package:untitled29/billing_screen.dart';
 import 'package:untitled29/models/Patient_model.dart';
-import 'package:untitled29/test_google_screen.dart';
 import 'package:untitled29/auth/signin_screen.dart';
 import 'package:untitled29/auth/signup_selector.dart';
-import 'package:untitled29/auth/patient_signup_screen.dart';
-import 'package:untitled29/auth/doctor_signup_screen.dart';
 
 final GoRouter _router = GoRouter(
   initialLocation: '/splash',
@@ -33,10 +30,6 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/splash',
       builder: (context, state) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: '/test-google',
-      builder: (context, state) => const TestGoogleScreen(),
     ),
     GoRoute(
       path: '/intro',
@@ -55,22 +48,6 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const SignupSelector(),
     ),
     GoRoute(
-      path: '/patient-signup',
-      builder: (context, state) => const PatientSignupScreen(),
-    ),
-    GoRoute(
-      path: '/doctor-signup',
-      builder: (context, state) => const DoctorSignupScreen(),
-    ),
-    GoRoute(
-      path: '/forget-password',
-      builder: (context, state) => const ForgetPassword(),
-    ),
-    GoRoute(
-      path: '/otp',
-      builder: (context, state) => const Otp(),
-    ),
-    GoRoute(
       path: '/dashboard',
       builder: (context, state) => const Dashboard(),
     ),
@@ -82,7 +59,7 @@ final GoRouter _router = GoRouter(
       path: '/doctor-detail',
       builder: (context, state) {
         if (state.extra == null || state.extra is! Doctor) {
-          return DoctorDetailPage(doctor: CurrentDoctor.current!);
+          return DoctorDetailPage(doctor: CurrentDoctor.getDummyDoctors()[0]);
         }
         return DoctorDetailPage(doctor: state.extra as Doctor);
       },
@@ -91,7 +68,7 @@ final GoRouter _router = GoRouter(
       path: '/appointment',
       builder: (context, state) {
         if (state.extra == null || state.extra is! Doctor) {
-          return DoctorAppointmentScreen(doctor: CurrentDoctor.current!);
+          return DoctorAppointmentScreen(doctor: CurrentDoctor.getDummyDoctors()[0]);
         }
         return DoctorAppointmentScreen(doctor: state.extra as Doctor);
       },
@@ -101,21 +78,26 @@ final GoRouter _router = GoRouter(
       builder: (context, state) {
         if (state.extra is Challan) {
           return PaymentPage(
-            doctor: CurrentDoctor.current!,
+            doctor: CurrentDoctor.getDummyDoctors()[0],
             challan: state.extra as Challan,
           );
         } else if (state.extra is Doctor) {
           return PaymentPage(doctor: state.extra as Doctor);
         } else {
-          return PaymentPage(doctor: CurrentDoctor.current!);
+          return PaymentPage(doctor: CurrentDoctor.getDummyDoctors()[0]);
         }
       },
     ),
     GoRoute(
       path: '/billing',
       builder: (context, state) {
-        final name = (state.extra is String) ? state.extra as String : "Ali Khan";
-        return BillingScreen(patientName: name);
+        final Map<String, dynamic> args = (state.extra != null && state.extra is Map<String, dynamic>)
+            ? state.extra as Map<String, dynamic>
+            : {'name': 'Patient', 'id': null};
+        return BillingScreen(
+          patientName: args['name'] ?? 'Patient',
+          patientId: args['id'],
+        );
       },
     ),
     GoRoute(
@@ -125,28 +107,6 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/call/:channel',
       builder: (context, state) => CallPage(channelName: state.pathParameters['channel']!),
-    ),
-    GoRoute(
-      path: '/patient-detail',
-      builder: (context, state) {
-        if (state.extra == null || state.extra is! PatientModel) {
-          return Scaffold(
-            body: PatientInfoPage(
-              patient: PatientModel(
-                name: 'Guest Patient',
-                age: 25,
-                email: 'guest@mail.com',
-                city: 'Karachi',
-                password: '',
-                cnic: '',
-                gender: 'Male',
-                address: '',
-              ),
-            ),
-          );
-        }
-        return PatientInfoPage(patient: state.extra as PatientModel);
-      },
     ),
     GoRoute(
       path: '/chat',
@@ -167,11 +127,9 @@ final GoRouter _router = GoRouter(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  final supabaseUrl = dotenv.env['SUPABASE_URL']!;
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']!;
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
   runApp(const MyApp());
 }

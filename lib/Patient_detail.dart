@@ -55,7 +55,7 @@ class PatientInfoPage extends StatelessWidget {
                             padding: EdgeInsets.all(4.r),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFF2D6CDF).withValues(alpha: 0.2), width: 2),
+                              border: Border.all(color: const Color(0xFF2D6CDF).withOpacity(0.2), width: 2),
                             ),
                             child: CircleAvatar(
                               radius: 46.r,
@@ -134,6 +134,7 @@ class PatientInfoPage extends StatelessWidget {
                         color: const Color(0xFF2D6CDF),
                         onPressed: () {
                           context.push('/chat', extra: {
+                            'id': '', // In real app, pass patient UID here
                             'name': patient.name,
                             'image': patient.imagePath,
                           });
@@ -142,15 +143,18 @@ class PatientInfoPage extends StatelessWidget {
                     ),
                     SizedBox(height: 12.h),
                     
-                    // Added Generate Bill Button for Testing
                     SizedBox(
                       width: double.infinity,
                       child: _ActionButton(
                         label: 'Generate Bill',
                         icon: Icons.receipt_long_rounded,
-                        color: Colors.green, // Different color to stand out
+                        color: Colors.green,
                         onPressed: () {
-                          context.push('/billing', extra: patient.name);
+                          // Fixed to pass Map as required by updated Billing route
+                          context.push('/billing', extra: {
+                            'name': patient.name,
+                            'id': null, // In real app, pass patient UID here
+                          });
                         },
                       ),
                     ),
@@ -185,10 +189,10 @@ class _InfoField extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF0F7FF),
         borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(color: const Color(0xFF2D6CDF).withValues(alpha: 0.3), width: 1.2),
+        border: Border.all(color: const Color(0xFF2D6CDF).withOpacity(0.3), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.05),
+            color: Colors.blue.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -213,7 +217,7 @@ class _InfoField extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 11.sp, 
-                    color: const Color(0xFF2D6CDF).withValues(alpha: 0.7),
+                    color: const Color(0xFF2D6CDF).withOpacity(0.7),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -264,7 +268,7 @@ class _ActionButton extends StatelessWidget {
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           elevation: 2,
-          shadowColor: color.withValues(alpha: 0.3),
+          shadowColor: color.withOpacity(0.3),
         ),
       ),
     );

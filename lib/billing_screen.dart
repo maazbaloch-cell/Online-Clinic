@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'doctor_model.dart';
-import 'notifications.dart'; // Added notifications import
+import 'services/notification_service.dart';
 
 class BillingScreen extends StatefulWidget {
   final String patientName;
-  const BillingScreen({super.key, required this.patientName});
+  final String? patientId;
+
+  const BillingScreen({super.key, required this.patientName, this.patientId});
 
   @override
   State<BillingScreen> createState() => _BillingScreenState();
@@ -18,6 +21,8 @@ class _BillingScreenState extends State<BillingScreen> {
   final TextEditingController _medicineFeeCtrl = TextEditingController();
   final TextEditingController _deliveryFeeCtrl = TextEditingController(text: "10");
   final TextEditingController _notesCtrl = TextEditingController();
+  final _notificationService = NotificationService();
+  bool _isSending = false;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +41,9 @@ class _BillingScreenState extends State<BillingScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _isSending 
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         padding: EdgeInsets.all(20.w),
         child: Form(
           key: _formKey,
@@ -46,7 +53,7 @@ class _BillingScreenState extends State<BillingScreen> {
               Container(
                 padding: EdgeInsets.all(15.r),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2D6CDF).withValues(alpha: 0.1),
+                  color: const Color(0xFF2D6CDF).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(15.r),
                 ),
                 child: Row(
@@ -61,31 +68,22 @@ class _BillingScreenState extends State<BillingScreen> {
                 ),
               ),
               SizedBox(height: 25.h),
-
               Text("Consultation Fee (\$)", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 8.h),
               _buildTextField(_checkupFeeCtrl, "Enter amount", Icons.attach_money, isNumber: true),
-              
               SizedBox(height: 20.h),
-
               Text("Medicine Charges (\$)", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 8.h),
               _buildTextField(_medicineFeeCtrl, "Enter amount", Icons.medication_liquid_rounded, isNumber: true),
-
               SizedBox(height: 20.h),
-
               Text("Delivery Charges (\$)", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 8.h),
               _buildTextField(_deliveryFeeCtrl, "Enter amount", Icons.local_shipping_rounded, isNumber: true),
-
               SizedBox(height: 20.h),
-
               Text("Prescription / Notes", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 8.h),
               _buildTextField(_notesCtrl, "Write medicines or advice here...", Icons.note_add_rounded, maxLines: 4),
-
               SizedBox(height: 40.h),
-
               SizedBox(
                 width: double.infinity,
                 height: 55.h,
@@ -131,29 +129,42 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  void _submitBill() {
+  Future<void> _submitBill() async {
     if (_formKey.currentState!.validate()) {
-      final challan = Challan(
-        patientName: widget.patientName,
-        consultationFee: double.parse(_checkupFeeCtrl.text),
-        medicineFee: double.parse(_medicineFeeCtrl.text),
-        deliveryFee: double.parse(_deliveryFeeCtrl.text),
-        notes: _notesCtrl.text,
-      );
-
-      // Add actual notification to the system
-      NotificationModel.addNotification(
-        title: "New Bill Generated",
-        body: "Doctor has sent you a bill for \$${challan.consultationFee + challan.medicineFee + challan.deliveryFee}. Please proceed to pay.",
-        type: "payment",
-        data: challan, // Passing challan object so notification can open it
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Bill sent and Patient Notified!")),
-      );
+      setState(() => _isSending = true);
       
-      context.go('/doctor-dashboard');
+      final total = (double.tryParse(_checkupFeeCtrl.text) ?? 0) + 
+                    (double.tryParse(_medicineFeeCtrl.text) ?? 0) + 
+                    (double.tryParse(_deliveryFeeCtrl.text) ?? 0);
+
+      try {
+        if (widget.patientId != null) {
+          await _notificationService.sendNotification(
+            userId: widget.patientId!,
+            title: "New Bill Received",
+            body: "Doctor has sent you a bill of \$\$total. Please complete your payment.",
+            type: "payment",
+            data: {
+              'patient_name': widget.patientName,
+              'amount': total,
+              'notes': _notesCtrl.text,
+            },
+          );
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Bill sent and Patient Notified!"), backgroundColor: Colors.green),
+          );
+          context.go('/doctor-dashboard');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: \$e")));
+        }
+      } finally {
+        if (mounted) setState(() => _isSending = false);
+      }
     }
   }
 }

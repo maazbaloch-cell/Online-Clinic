@@ -15,21 +15,14 @@ class IntroScreenDemo extends StatelessWidget {
           title: "Your Health is Our Commitment",
           body: "Discover verified doctors and book appointments instantly. 24/7 availability guaranteed.",
           image: Padding(
-            padding: EdgeInsets.only(top: 50.h),
-            child: Container(
-              width: 300.r,
-              height: 300.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3.w),
-                color: Colors.white,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/doctor.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.person, size: 100.sp, color: Colors.blue),
-                ),
+            padding: EdgeInsets.only(top: 60.h),
+            child: CircleAvatar(
+              radius: 120.r,
+              backgroundColor: Colors.white,
+              child: CircleAvatar(
+                radius: 115.r,
+                backgroundImage: const AssetImage('assets/Doctor.jpg'),
+                backgroundColor: Colors.white,
               ),
             ),
           ),
@@ -39,21 +32,14 @@ class IntroScreenDemo extends StatelessWidget {
           title: "Expert Care, Anytime. Anywhere",
           body: "AI‑powered scheduling with real‑time availability. Sterile rooms. Instant confirmation.",
           image: Padding(
-            padding: EdgeInsets.only(top: 50.h),
-            child: Container(
-              width: 300.r,
-              height: 300.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3.w),
-                color: Colors.white,
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/doctors.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.local_hospital, size: 100.sp, color: Colors.blue),
-                ),
+            padding: EdgeInsets.only(top: 60.h),
+            child: CircleAvatar(
+              radius: 120.r,
+              backgroundColor: Colors.white,
+              child: CircleAvatar(
+                radius: 115.r,
+                backgroundImage: const AssetImage('assets/doctor.png'),
+                backgroundColor: Colors.white,
               ),
             ),
           ),
@@ -62,7 +48,14 @@ class IntroScreenDemo extends StatelessWidget {
         PageViewModel(
           title: "Smarter Healthcare Begins Here",
           body: "Experience seamless booking, real‑time updates, and secure consultations designed around your comfort.",
-          image: Icon(Icons.medical_information, color: Colors.white, size: 150.sp),
+          image: Padding(
+            padding: EdgeInsets.only(top: 60.h),
+            child: CircleAvatar(
+              radius: 120.r,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.medical_information, color: Colors.blue, size: 100.sp),
+            ),
+          ),
           decoration: _pageDecoration(),
         ),
       ],

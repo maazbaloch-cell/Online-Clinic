@@ -11,9 +11,7 @@ class AuthService {
     try {
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
       final fullPath = '$path/$fileName';
-      
       await _client.storage.from('avatars').upload(fullPath, file);
-      
       final String publicUrl = _client.storage.from('avatars').getPublicUrl(fullPath);
       return publicUrl;
     } catch (e) {
@@ -41,11 +39,9 @@ class AuthService {
     if (response.user != null) {
       final userId = response.user!.id;
       String? imageUrl;
-
       if (imageFile != null) {
         imageUrl = await uploadImage(imageFile, role == 'doctor' ? 'doctors' : 'patients');
       }
-      
       await _client.from('profiles').upsert({
         'id': userId,
         'email': email,
@@ -81,6 +77,17 @@ class AuthService {
 
   Future<AuthResponse> signIn(String email, String password) async {
     return await _client.auth.signInWithPassword(email: email, password: password);
+  }
+
+  // Adding getUserRole method as required by Signin and Getstarted screens
+  Future<String?> getUserRole(String userId) async {
+    try {
+      final res = await _client.from('profiles').select('role').eq('id', userId).maybeSingle();
+      if (res != null) return res['role'] as String;
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> signOut() async {
