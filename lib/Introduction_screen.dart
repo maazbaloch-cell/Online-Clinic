@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:introduction_screen/introduction_screen.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:untitled29/Getstarted.dart';
+import 'package:go_router/go_router.dart';
 
 class IntroScreenDemo extends StatelessWidget {
   const IntroScreenDemo({super.key});
@@ -62,8 +62,11 @@ class IntroScreenDemo extends StatelessWidget {
       showSkipButton: true,
       skip: Text("Skip", style: TextStyle(color: Colors.white, fontSize: 16.sp)),
       next: Icon(Icons.chevron_right, color: Colors.white, size: 24.sp),
-      onSkip: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Getstarted())),
-      onDone: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Getstarted())),
+      
+      // GoRouter use kiya taake Intro history se nikal jaye aur navigation stack sahi rahe
+      onSkip: () => context.go('/getstarted'),
+      onDone: () => context.go('/getstarted'),
+      
       showNextButton: true,
       showDoneButton: true,
       done: Text("Done", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16.sp)),
